@@ -205,11 +205,14 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 
 		// (unsigned) octal
 		case 'o':
+			num = getuint(&ap, lflag);
+			base = 8;
 			// Replace this with your code.
-			putch('X', putdat);
-			putch('X', putdat);
-			putch('X', putdat);
-			break;
+			//putch('X', putdat);
+			//putch('X', putdat);
+			//putch('X', putdat);
+			goto number;
+			//break;
 
 		// pointer
 		case 'p':
@@ -227,6 +230,42 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		number:
 			printnum(putch, putdat, num, base, width, padc);
 			break;
+
+        case 'n': {
+            // You can consult the %n specifier specification of the C99 printf function
+            // for your reference by typing "man 3 printf" on the console. 
+
+            // 
+            // Requirements:
+            // Nothing printed. The argument must be a pointer to a signed char, 
+            // where the number of characters written so far is stored.
+            //
+
+            // hint:  use the following strings to display the error messages 
+            //        when the cprintf function ecounters the specific cases,
+            //        for example, when the argument pointer is NULL
+            //        or when the number of characters written so far 
+            //        is beyond the range of the integers the signed char type 
+            //        can represent.
+
+            const char *null_error = "\nerror! writing through NULL pointer! (%n argument)\n";
+            const char *overflow_error = "\nwarning! The value %n argument pointed to has been overflowed!\n";
+
+            // Your code here
+            signed char *pnum;
+            if ((pnum = va_arg(ap, signed char *)) == NULL) {
+		printfmt(putch, putdat, "%s", null_error);
+                break;
+            }
+            if(*(int *)putdat > 127) {
+                *pnum = (signed char)(*((int*)putdat));
+		printfmt(putch, putdat, "%s", overflow_error);
+                break;
+            }
+
+            *pnum = (signed char)(*((int*)putdat));
+            break;
+        }
 
 		// escaped '%' character
 		case '%':
