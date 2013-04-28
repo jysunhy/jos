@@ -95,7 +95,7 @@ boot_alloc(uint32_t n)
 	if (!nextfree) {
 		extern char end[];
 		nextfree = ROUNDUP((char *) end, PGSIZE);
-		cprintf("%p %p\n",end,nextfree);
+	//	cprintf("%p %p\n",end,nextfree);
 	}
 	if(!n) {
 		//return page2kva(page_free_list);
