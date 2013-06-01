@@ -279,6 +279,10 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
+    int i = 0;
+    for(; i < NCPU; i++){
+	    boot_map_region(kern_pgdir,KSTACKTOP-KSTKSIZE-i*(KSTKSIZE+KSTKGAP),KSTKSIZE,PADDR(percpu_kstacks[i]),PTE_W);
+    }
 
 }
 
@@ -318,36 +322,16 @@ page_init(void)
 	// Change the code to reflect this.
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
-/*
 	size_t i;
-	page_free_list=NULL;
-	for (i = 0; i < npages; i++) {
-		pages[i].pp_ref = 0;
-		if(i == 0)
-			continue;
-		if(i < npages_basemem){
-			pages[i].pp_link = page_free_list;
-			page_free_list = &pages[i];
-			continue;
-		}
-		if(i >= PGNUM(IOPHYSMEM) && i < PGNUM(EXTPHYSMEM))
-			continue;
-		if(i >= PGNUM(EXTPHYSMEM) && page2kva(&pages[i]) < (boot_alloc(0)))
-			continue;
-		pages[i].pp_link = page_free_list;
-		page_free_list = &pages[i];
-	}
-	//cprintf("outof page_init\n");
-
-*/
-
-	size_t i;
-        page_free_list=NULL;
+    page_free_list=NULL;
         struct Page* tail=NULL;
         for (i = 0; i < npages; i++) {
                 pages[i].pp_ref = 0;
                 if(i == 0)
                         continue;
+                if(i == PGNUM(MPENTRY_PADDR)){
+                        continue;
+                }
                 if(i < npages_basemem){
                         goto allocate;
                 }
@@ -366,8 +350,6 @@ allocate:
                         tail->pp_link=NULL;
                 }
         }
-
-        //cprintf("outof page_init\n");
 
 }
 

@@ -11,6 +11,7 @@
 #include <kern/syscall.h>
 #include <kern/console.h>
 #include <kern/sched.h>
+#include <kern/spinlock.h>
 
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
@@ -295,6 +296,9 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 			return sys_env_destroy(a1);
 		case SYS_map_kernel_page:
 			return sys_map_kernel_page((void *)a1, (void *)a2);
+        case SYS_yield:
+			sys_yield();
+            return 0;
 		default:
 			return -E_INVAL;
 	}
@@ -302,6 +306,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 }
 
 void _syscall(struct Trapframe *tf){
+    lock_kernel();
 	curenv->env_tf = *tf;
 	tf->tf_regs.reg_eax=syscall(tf->tf_regs.reg_eax,
 							tf->tf_regs.reg_edx,
@@ -309,4 +314,5 @@ void _syscall(struct Trapframe *tf){
 							tf->tf_regs.reg_ebx,
 							tf->tf_regs.reg_edi,
                             0);
+    unlock_kernel();
 }
