@@ -119,8 +119,7 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
-//haiyang 2
-	int i;
+	int i = 0;
 	for(i = 0; i < NENV; i++) {
 		envs[i].env_id=0;
 		envs[i].env_status = ENV_FREE;
@@ -130,11 +129,10 @@ env_init(void)
 		else
 			envs[i].env_link = &envs[i+1];
 	}
-	env_free_list = &envs[0];
-//end
+	env_free_list = &(envs[0]);
+
 	// Per-CPU part of the initialization
 	env_init_percpu();
-    
 }
 
 // Load GDT and segment descriptors.
@@ -196,9 +194,10 @@ env_setup_vm(struct Env *e)
 
 	// LAB 3: Your code here.
 	e->env_pgdir = page2kva(p);
-	//memset(e->env_pgdir, 0, PGSIZE);
-	memmove(e->env_pgdir,kern_pgdir,PGSIZE);
-	memset(e->env_pgdir, 0, PDX(UTOP)*sizeof(pde_t));
+	memset(page2kva(p), 0, PGSIZE);
+	memmove(page2kva(p), kern_pgdir,PGSIZE);
+//	memset(page2kva(p), 0, sizeof(pde_t)*PDX(UTOP));
+
 	p->pp_ref++;
 
 	// UVPT maps the env's own page table read-only.
@@ -265,8 +264,6 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 
 	// Enable interrupts while in user mode.
 	// LAB 4: Your code here.
-    e->env_tf.tf_eflags = (e->env_tf.tf_eflags) | FL_IF;
-    
 
 	// Clear the page fault handler until user installs one.
 	e->env_pgfault_upcall = 0;
@@ -299,7 +296,6 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
-    
 	int r;
 	va = ROUNDDOWN(va, PGSIZE);
 	len = ROUNDUP(len, PGSIZE);
@@ -545,7 +541,7 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-	if(curenv != e) {
+	if(curenv != e){
 		if(curenv != NULL && curenv->env_status == ENV_RUNNING)
 			curenv->env_status = ENV_RUNNABLE;
 		curenv = e;
@@ -553,9 +549,7 @@ env_run(struct Env *e)
 		curenv->env_runs++;
 		lcr3(PADDR(curenv->env_pgdir));
 	}
-    unlock_kernel();
+	unlock_kernel();
 	env_pop_tf(&curenv->env_tf);
-
-	//panic("env_run not yet implemented");
 }
 

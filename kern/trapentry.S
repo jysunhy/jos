@@ -47,6 +47,7 @@
 /*
  * Lab 3: Your code here for generating entry points for the different traps.
  */
+
 TRAPHANDLER_NOEC(handler_divide, T_DIVIDE);
 TRAPHANDLER_NOEC(handler_debug, T_DEBUG);
 TRAPHANDLER_NOEC(handler_nmi, T_NMI);
@@ -70,7 +71,6 @@ TRAPHANDLER_NOEC(handler_simderr, T_SIMDERR);
 TRAPHANDLER_NOEC(handler_syscall, T_SYSCALL);
 
 
-
 .globl sysenter_handler;
 .type sysenter_handler, @function;
 .align 2;
@@ -78,54 +78,6 @@ sysenter_handler:
 /*
  * Lab 3: Your code here for system call handling
  */
- /*
-	pushw $0x0
-	pushw $GD_UD | 3
-	pushl %ebp
-	pushfl
-
-	pushw $0x0
-	pushw $GD_UT | 3
-	pushl %esi
-	pushl $0
-	pushl $0
-
-	pushw $0x0
-
-	pushw %ds
-
-	pushw $0x0
-	pushw %es
-
-	pushal
-
-	mov $GD_KD, %ax
-	mov %ax, %ds
-	mov %ax, %es
-	
-	pushl %esp
-
-	call syscall_dummy
-
-	popl %esp
-
-	popal
-
-	popl %es
-
-	popl %ds
-
-	movl %ebp, %ecx
-	movl %esi, %edx
-
-	sysexit
-	
-	pushl %edi
-	pushl %ebx
-	pushl %ecx
-	pushl %edx
-	pushl %eax
-	call syscall*/
     pushl %esi
     pushl %ebp
     pushl %edi
@@ -150,7 +102,6 @@ sysenter_handler:
     popfl
     sysexit
 
-
 /*
  * Lab 3: Your code here for _alltraps
  */
@@ -165,5 +116,4 @@ _alltraps:
 
 	pushl %esp
 	call trap
-	add $4, %esp
 

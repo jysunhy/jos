@@ -145,7 +145,7 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
 {
 	// LAB 4: Your code here.
 	struct Env *env;
-	//cprintf("set pgfault upcall\n");
+	cprintf("set pgfault upcall\n");
 	int r = envid2env(envid, &env, 1);
 	if(r < 0)
 		return r;
@@ -329,60 +329,7 @@ static int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
 	// LAB 4: Your code here.
-	//cprintf("send ipc");
-	struct Env *env;
-	int r = envid2env(envid, &env, 0);
-	if(r < 0)
-		return -E_BAD_ENV;
-	if(env->env_ipc_from != 0)
-		return -E_IPC_NOT_RECV;
-	if(env->env_ipc_recving == 0){
-		return -E_IPC_NOT_RECV;
-	}
-
-	if((uint32_t)srcva < UTOP){
-		if(((uint32_t)srcva) % PGSIZE != 0) {
-			return -E_INVAL;
-		}
-
-		if((perm & PTE_U) == 0 || (perm & PTE_P) == 0){
-			return -E_INVAL;
-		}
-
-		if(perm & ~(PTE_SYSCALL))
-			return -E_INVAL;
-
-		pte_t * pte;
-		struct Page * page = page_lookup(curenv->env_pgdir, srcva, &pte);
-
-		if(perm & PTE_W) {
-			if(((*pte) & PTE_W) == 0) {
-				return -E_INVAL;
-			}
-		}
-
-		if ((uint32_t)(env->env_ipc_dstva) < UTOP)
-			r = sys_page_map(curenv->env_id, srcva, envid, (env->env_ipc_dstva),perm);
-		if (r < 0)
-			return r;
-	}
-
-	env->env_ipc_recving = 0;
-	env->env_ipc_from = curenv->env_id;
-	env->env_ipc_value = value;
-
-	if((uint32_t)(env->env_ipc_dstva) < UTOP) {
-		env->env_ipc_perm = perm;	
-	} else {
-		env->env_ipc_perm = 0;
-	}
-
-	env->env_status = ENV_RUNNABLE;
-
-	env->env_tf.tf_regs.reg_eax = 0;
-
-	return 0;
-	//panic("sys_ipc_try_send not implemented");
+	panic("sys_ipc_try_send not implemented");
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -400,70 +347,20 @@ static int
 sys_ipc_recv(void *dstva)
 {
 	// LAB 4: Your code here.
-	if((uint32_t)dstva < UTOP){
-		if (((uint32_t)dstva) % PGSIZE != 0)
-			return -E_INVAL;
-	}
-
-	curenv->env_ipc_recving = 1;
-	curenv->env_ipc_dstva = dstva;
-	curenv->env_ipc_from = 0;
-
-	curenv->env_status = ENV_NOT_RUNNABLE;
-
-	sched_yield();
-	//panic("sys_ipc_recv not implemented");
+	panic("sys_ipc_recv not implemented");
 	return 0;
 }
 
 // Dispatches to the correct kernel function, passing the arguments.
-/*
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
 {
 	// Call the function corresponding to the 'syscallno' parameter.
 	// Return any appropriate return value.
 	// LAB 3: Your code here.
-	switch (syscallno){
-		case SYS_getenvid:
-			return sys_getenvid();
-		case SYS_cputs:
-			sys_cputs((const char*) a1,a2);
-			return 0;
-		case SYS_cgetc:
-			return sys_cgetc();
-		case SYS_env_destroy:
-			return sys_env_destroy(a1);
-		case SYS_map_kernel_page:
-			return sys_map_kernel_page((void *)a1, (void *)a2);
-		case SYS_yield:
-			sys_yield();
-			return 0;
-		case SYS_exofork:
-		   	return sys_exofork();
-		case SYS_page_alloc:
-			return sys_page_alloc(a1, (void*)a2, a3);
-		case SYS_page_map:
-			return sys_page_map(a1, (void *)a2, a3,(void*)a4, a5);
-		case SYS_page_unmap:
-			return sys_page_unmap(a1, (void *)a2);
-		default:
-			return -E_INVAL;
-	}
-
-//	panic("syscall not implemented");
-}
-*/
-int32_t
-syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
-{
-	// Call the function corresponding to the 'syscallno' parameter.
-	// Return any appropriate return value.
-	// LAB 3: Your code here.
-    int32_t res;
+    int res;
     a5 = syscallno >> 8;
     syscallno -= (a5<<8);
-    //if(a5!=0)cprintf("syscallno %d %x %x\n",syscallno,a1,a5);
     switch(syscallno)
     {
         case SYS_cputs:
@@ -514,21 +411,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
         default:
             res = -E_INVAL;
     }
-	//panic("syscall not implemented");
-    //cprintf("res %x\n",res);
     return res;
 }
-/*
-void
-syscall_dummy(struct Trapframe *tf){
-	curenv->env_tf = *tf;
-	tf->tf_regs.reg_eax=syscall(tf->tf_regs.reg_eax,
-							tf->tf_regs.reg_edx,
-							tf->tf_regs.reg_ecx,
-							tf->tf_regs.reg_ebx,
-							tf->tf_regs.reg_edi,0);
-	return;
-}*/
 
 int32_t
 _syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5,uint32_t aesp,uint32_t aeip)
@@ -539,10 +423,8 @@ _syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4,
     curenv->env_tf.tf_esp = aesp;
     res = syscall(syscallno,a1,a2,a3,a4,a5);
     curenv->env_tf.tf_regs.reg_eax = res;
-    //env_run!use iret to restore eflags(IF)
     env_run(curenv);
     unlock_kernel();
-    //panic("syscall wrapper error!");
     return res;
 }
 
