@@ -78,6 +78,7 @@ sysenter_handler:
 /*
  * Lab 3: Your code here for system call handling
  */
+ /*
 	pushw $0x0
 	pushw $GD_UD | 3
 	pushl %ebp
@@ -104,7 +105,7 @@ sysenter_handler:
 	
 	pushl %esp
 
-	call _syscall
+	call syscall_dummy
 
 	popl %esp
 
@@ -118,6 +119,36 @@ sysenter_handler:
 	movl %esi, %edx
 
 	sysexit
+	
+	pushl %edi
+	pushl %ebx
+	pushl %ecx
+	pushl %edx
+	pushl %eax
+	call syscall*/
+    pushl %esi
+    pushl %ebp
+    pushl %edi
+    pushl %edi
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+    pushl %eax 
+    call _syscall
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ecx
+    popl %edx
+    pushfl      //enable IF
+    movl (%esp),%ebx
+    orl $0x200,%ebx
+    movl %ebx, (%esp)
+    popfl
+    sysexit
 
 
 /*
