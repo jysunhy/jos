@@ -39,19 +39,19 @@ pgfault(struct UTrapframe *utf)
 	pte_t pte = vpt[PGNUM(addr)];
 
 	if (!(pde & PTE_P))
-		panic("pgfault: wrong pde\n");
+		panic("pde error");
 
 	if((pte & (PTE_U | PTE_P | PTE_COW))==0)
-		panic("fgfault: wrong pte\n");
+		panic("not cow\n");
 	r = sys_page_alloc(0, (void *)PFTEMP, PTE_U | PTE_P | PTE_W);
-	if(r < 0)
-		panic("pgfault: bad sys page alloc");
+	if(r)
+		panic("sys_page_alloc error");
 
 	memmove((void *) PFTEMP, (void *)((PGNUM(addr))<<PTXSHIFT), PGSIZE);
 
 	r = sys_page_map(0, (void *)PFTEMP, 0, (void *)((PGNUM(addr))<<PTXSHIFT), PTE_U | PTE_P | PTE_W);
-	if(r < 0)
-		panic("pgfault: bad sys page alloc");
+	if(r)
+		panic("sys_page_map error in pgfault");
 }
 
 //
@@ -73,7 +73,7 @@ duppage(envid_t envid, unsigned pn)
 	unsigned int addr = pn * PGSIZE;
 
 	if(addr >= UTOP)
-		panic("larger than UTOP");
+		panic("cannot dup page above UTOP");
 
 	pde_t pde;
 	pde = vpd[PDX(addr)];
@@ -90,16 +90,15 @@ duppage(envid_t envid, unsigned pn)
 	if((pte & PTE_W) != 0 || (pte & PTE_COW) != 0){
 		r = sys_page_map(0, (void *)addr, envid, (void *)addr,  PTE_U|PTE_P|PTE_COW);
 		if(r < 0)
-			panic("duppage: error page map\n");
+			panic("duppage error");
 		r = sys_page_map(0, (void *)addr, 0, (void *)addr ,PTE_U|PTE_P|PTE_COW);
 		if(r < 0)
-			panic("duppage: error page map\n");
+			panic("duppage error");
 	}else{
 		r = sys_page_map(0, (void *)addr, envid, (void *)addr, PTE_U|PTE_P);
 		if(r < 0)
-			panic("duppage: error page map\n");
+			panic("duppage error");
 	}
-	// LAB 4: Your code here.
 	return 0;
 }
 
@@ -127,10 +126,11 @@ fork(void)
 	set_pgfault_handler(pgfault);	
 	envid = sys_exofork();
 	if(envid < 0) {
-		panic("exofork error\n");
+		panic("exofork err");
 	}
 
 	if(envid == 0){
+        //the child process
 		thisenv = &envs[ENVX(sys_getenvid())];
 		return 0;
 	}
@@ -141,12 +141,12 @@ fork(void)
 	}
 
 	int r = sys_page_alloc(envid, (void *)(UXSTACKTOP - PGSIZE), PTE_U | PTE_P | PTE_W);
-	if(r < 0)
-		panic("sys page alloc failed\n");
+	if(r)
+		panic("sys_page_alloc failed");
 	extern void _pgfault_upcall(void);
 	r = sys_env_set_pgfault_upcall(envid, (void *)_pgfault_upcall);
-	if(r < 0)
-		panic("sys env set pgfault upcall failded\n");
+	if(r)
+		panic("sys_env_set pgfault upcall failded");
 	sys_env_set_status(envid, ENV_RUNNABLE);
 	return envid;
 }
