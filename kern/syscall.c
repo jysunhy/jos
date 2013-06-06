@@ -98,11 +98,9 @@ sys_exofork(void)
 
 	// LAB 4: Your code here.
 	struct Env *new_env;
-	struct Env *cur = curenv;
-	//envid2env(curenv, &cur,1);
 	env_alloc(&new_env, curenv->env_id);
 	new_env->env_status = ENV_NOT_RUNNABLE;
-	new_env->env_tf = cur->env_tf;
+	new_env->env_tf = curenv->env_tf;
 	(new_env->env_tf).tf_regs.reg_eax = 0;
 	return new_env->env_id;
 }
@@ -124,12 +122,12 @@ sys_env_set_status(envid_t envid, int status)
 	// envid's status.
 
 	// LAB 4: Your code here.
-	struct Env *targetenv;
-	int r = envid2env(envid, &targetenv, 1);
-	if(r < 0)
+	struct Env *target;
+	int r = envid2env(envid, &target, 1);
+	if(r)
 		return r;
-	targetenv->env_status = status;
-	return r;
+	target->env_status = status;
+	return 0;
 }
 
 // Set the page fault upcall for 'envid' by modifying the corresponding struct
@@ -145,9 +143,8 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
 {
 	// LAB 4: Your code here.
 	struct Env *env;
-	cprintf("set pgfault upcall\n");
 	int r = envid2env(envid, &env, 1);
-	if(r < 0)
+	if(r)
 		return r;
 	env->env_pgfault_upcall = func;
 	return 0;
@@ -185,11 +182,11 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 		return -E_INVAL;
 	if((uint32_t)va % PGSIZE)
 		return -E_INVAL;
-	if((perm & PTE_U) == 0 || (perm & PTE_P) == 0 )
+	if(!((perm & PTE_U)  && (perm & PTE_P) ))
 		return -E_INVAL;
 	struct Env *env;
 	int r = envid2env(envid, &env, 1);
-	if(r == -E_BAD_ENV)
+	if(r)
 		return r;
 	struct Page *new_page = page_alloc(ALLOC_ZERO); 
 	if(new_page == NULL)
@@ -233,7 +230,7 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	// LAB 4: Your code here.
 	struct Env *srcenv;
 	struct Env *dstenv;
-	pte_t *pte_store;
+	pte_t *pte_tmp;
 	if((uint32_t)srcva >= UTOP)
 		return -E_INVAL;
 	if((uint32_t)srcva % PGSIZE)
@@ -249,9 +246,9 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	if((perm & PTE_U) == 0 || (perm & PTE_P) == 0 )
 		return -E_INVAL;
 
-	struct Page * srcpage = page_lookup(srcenv->env_pgdir, srcva, &pte_store);
+	struct Page * srcpage = page_lookup(srcenv->env_pgdir, srcva, &pte_tmp);
 	if(perm & PTE_W){
-		if(((*pte_store) & PTE_W)==0)
+		if(((*pte_tmp) & PTE_W)==0)
 			return -E_INVAL;
 	}
 	if(!srcpage)
