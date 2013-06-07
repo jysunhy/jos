@@ -29,7 +29,7 @@ ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 	else
 		r = sys_ipc_recv((void *)UTOP);
 
-	if(r < 0){
+	if(r){
 		if( from_env_store != NULL )
 			*from_env_store = 0;
 		if( perm_store != NULL )
@@ -37,13 +37,13 @@ ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 		return r;
 	}
 
-	if(from_env_store != NULL){
+	if(from_env_store != NULL)
 		*from_env_store = thisenv->env_ipc_from;
-	}
-	if(perm_store != NULL) {
+	
+	if(perm_store != NULL) 
 		*perm_store = thisenv->env_ipc_perm;
-	}
-    return (int32_t)(thisenv->env_ipc_value);
+	
+    return thisenv->env_ipc_value;
 }
 
 // Send 'val' (and 'pg' with 'perm', if 'pg' is nonnull) to 'toenv'.
@@ -64,9 +64,13 @@ ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 			r = sys_ipc_try_send(to_env, val, pg, perm);
 		else
 			r = sys_ipc_try_send(to_env, val, (void *)UTOP, 0);
-		if(r < 0 && r != -E_IPC_NOT_RECV)
-			panic("send failed!");
-
+        if(r == -E_IPC_NOT_RECV){
+            sys_yield();
+            continue;
+        }
+        if(r == 0)
+            break;
+		panic("error in ipc_send");
 		sys_yield();
 	}
 	//panic("ipc_send not implemented");
